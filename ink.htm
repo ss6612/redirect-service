@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面跳转中...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .manual-link {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .manual-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .error {
+            color: #ff6b6b;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <div class="message">正在为您跳转到目标页面...</div>
+        <div id="error-msg" class="error" style="display: none;"></div>
+        <a id="manual-link" class="manual-link" href="#" target="_blank" style="display: none;">
+            点击这里手动访问
+        </a>
+    </div>
+
+    <script>
+        // Base64解码函数
+        function base64Decode(str) {
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // 获取URL参数
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 验证URL格式
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return string.startsWith('https://') || string.startsWith('http://');
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // 主要跳转逻辑
+        function performRedirect() {
+            const encodedUrl = getUrlParameter('c');
+            
+            if (!encodedUrl) {
+                showError('缺少必要参数');
+                return;
+            }
+
+            const decodedUrl = base64Decode(encodedUrl);
+            
+            if (!decodedUrl) {
+                showError('参数解析失败');
+                return;
+            }
+
+            if (!isValidUrl(decodedUrl)) {
+                showError('无效的目标地址');
+                return;
+            }
+
+            // 显示手动链接作为备选
+            const manualLink = document.getElementById('manual-link');
+            manualLink.href = decodedUrl;
+            manualLink.style.display = 'inline-block';
+
+            // 延迟跳转，给用户时间看到页面
+            setTimeout(() => {
+                // 尝试在当前窗口跳转
+                window.location.href = decodedUrl;
+            }, 2000);
+
+            // 备选方案：如果2秒后还在当前页面，提示用户手动点击
+            setTimeout(() => {
+                document.querySelector('.message').textContent = '自动跳转可能被阻止，请点击下方链接手动访问';
+                document.querySelector('.spinner').style.display = 'none';
+            }, 3000);
+        }
+
+        function showError(message) {
+            document.querySelector('.spinner').style.display = 'none';
+            document.querySelector('.message').style.display = 'none';
+            document.getElementById('error-msg').textContent = message;
+            document.getElementById('error-msg').style.display = 'block';
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', performRedirect);
+
+        // 防止页面被嵌入iframe（可选的安全措施）
+        if (window.top !== window.self) {
+            window.top.location = window.self.location;
+        }
+    </script>
+</body>
+</html>
